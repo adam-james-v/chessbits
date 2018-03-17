@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>CQ View</title>
+    <script src="effect.js"></script>
+    <script src="three.min.js"></script>
+    <script src="three.etc.min.js"></script>
+    <script src="js/controls/OrbitControls.js"></script>
+    <style>
+      html, body {
+        margin: 0;
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #282a36;
+      }
+      .dg {
+        z-index: 40 !important;
+      }
+      #main {
+        width: 50%;
+        height: 50%;
+      }
+      iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+        transform: scale(2);
+      }
+    </style>
+  </head>
+<body>
+    <div id='main'>
+      <iframe src="viewer.html"></iframe>
+    </div>
+</body>
+</html>
