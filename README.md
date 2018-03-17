@@ -23,3 +23,7 @@ Allows control over:
     * base diameter
     * piece height
     * diameter of the top of the piece
+
+## Watch Me Work on this
+
+I stream my programming [on Twitch](https://www.twitch.tv/rustyvermeer) if you would like to see this project as it is being built. 
