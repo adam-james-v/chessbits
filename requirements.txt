@@ -1,0 +1,2 @@
+chess
+cadquery>=1.0.0
