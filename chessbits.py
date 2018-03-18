@@ -22,9 +22,9 @@ def base(diameter, height):
 
     pts = [
         (radius, 0.0),
-        (radius, (2.0/3.0)*height - notch),
+        (radius, (2.0/3.0)*height - notch/2.0),
         (radius - notch, (2.0/3.0)*height),
-        (radius, (2.0/3.0)*height + notch),
+        (radius, (2.0/3.0)*height + notch/2.0),
         (radius, height),
         (0.0, height),
     ]
@@ -59,28 +59,47 @@ def neck(bottom_d, top_d, height):
 
 def top(diameter, piece):
 
-    result = (cq.Workplane('ZX')
-        .box(diameter, diameter, diameter)
-        .translate((0, diameter/2.0, 0))
+    temp = (cq.Workplane('ZX')
+        .box(1.0, 1.0, 1.0)
+        .translate((0, 0.5, 0))
     )
 
     def pawn():
+        sphere = (cq.Workplane('XY')
+            .sphere(0.5)
+            .translate((0, 0.505, 0))
+        )
+
+        cyl = (cq.Workplane('ZX')
+            .circle(0.375)
+            .extrude(0.25)
+        )
+
+        result = cyl.union(sphere)
+
+        return result
+
+    def rook(base):
         pass
 
-    def rook():
+    def knight(base):
         pass
 
-    def knight():
+    def bishop(base):
         pass
 
-    def bishop():
+    def queen(base):
         pass
 
-    def queen():
+    def king(base):
         pass
 
-    def king():
-        pass
+    if piece == 'pawn':
+        result = pawn()
+    else:
+        result = temp
+
+    result = result.findSolid().scale(diameter)
 
     return result
 
@@ -117,7 +136,7 @@ if __name__ == '__main__':
     spec = {
         'base': {'diameter': 50.0, 'height': 30.0},
         'neck': {'bottom_d': 45.0, 'top_d': 25.0, 'height': 70.0},
-        'top': {'diameter': 32.0, 'piece': 'blah'},
+        'top': {'diameter': 22.5, 'piece': 'pawn'},
     }
 
     result = build_piece(spec)
