@@ -44,8 +44,18 @@ def neck(bottom_d, top_d, height):
 
     bottom_r = bottom_d/2.0
     top_r = top_d/2.0
+    thickness = height*0.05
 
-    result = (cq.Workplane('XY')
+    ringlist = [
+        {'diameter': bottom_d + thickness/2.0, 'thickness': thickness, 'pos': 0.0},
+        {'diameter': bottom_d - thickness*0.85, 'thickness': thickness, 'pos': height*0.08},
+        {'diameter': top_d + thickness/2.0, 'thickness': thickness, 'pos': height*0.92},
+        {'diameter': top_d + thickness/1.75, 'thickness': thickness, 'pos': height},
+    ]
+
+    ring_set = add_rings(ringlist)
+
+    base = (cq.Workplane('XY')
         .lineTo(bottom_r, 0.0)
         .threePointArc(
             ((bottom_r-top_r)/3.0 + top_r, height/3.0),
@@ -54,6 +64,8 @@ def neck(bottom_d, top_d, height):
         .lineTo(0.0, height).close()
         .revolve()
     )
+
+    result = base.union(ring_set)
 
     return result
 
