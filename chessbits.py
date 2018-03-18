@@ -22,9 +22,9 @@ def base(diameter, height):
 
     pts = [
         (radius, 0.0),
-        (radius, (2.0/3.0)*height - notch/2.0),
+        (radius, (2.0/3.0)*height - notch),
         (radius - notch, (2.0/3.0)*height),
-        (radius, (2.0/3.0)*height + notch/2.0),
+        (radius, (2.0/3.0)*height + notch),
         (radius, height),
         (0.0, height),
     ]
@@ -32,7 +32,8 @@ def base(diameter, height):
     result = (cq.Workplane('XY')
         .polyline(pts).close()
         .revolve()
-        .faces('|Z').fillet(notch)
+        .faces('<Y').fillet(notch)
+        .faces('>Y').fillet(notch)
     )
 
     return result
@@ -87,12 +88,43 @@ def top(diameter, piece):
             .extrude(0.25)
         )
 
-        result = cyl.union(sphere)
+        ring_spec = [
+            {'diameter': 1.05, 'thickness': 0.125, 'pos': 0.0625},        
+        ]
+        ring = add_rings(ring_spec)
+
+        result = (cyl
+            .union(ring)
+            .union(sphere)
+        )
 
         return result
 
-    def rook(base):
-        pass
+    def rook():
+        thickness = 0.08
+        height = 0.75
+
+        base = (cq.Workplane('ZX')
+            .circle(0.5).extrude(height)
+            .faces('>Y').circle(0.5 - thickness).cutBlind(-height*0.45)
+            .faces('<Y').fillet(thickness*0.85)
+            .faces('<Y[-2]').fillet(thickness*0.65)
+        )
+
+        notch01 = (cq.Workplane('XY')
+            .box(thickness, 2*thickness, 1.1)
+            .translate((0, height-thickness, 0))
+        )
+        notch02 = notch01.rotate((0, 0, 0), (0, 1, 0), 120)
+        notch03 = notch01.rotate((0, 0, 0), (0, 1, 0), 240)
+
+        result = (base
+            .cut(notch01)
+            .cut(notch02)
+            .cut(notch03)
+        )
+
+        return result
 
     def knight(base):
         pass
@@ -108,6 +140,8 @@ def top(diameter, piece):
 
     if piece == 'pawn':
         result = pawn()
+    if piece == 'rook':
+        result = rook()
     else:
         result = temp
 
@@ -146,18 +180,10 @@ def build_set():
 if __name__ == '__main__':
 
     spec = {
-        'base': {'diameter': 50.0, 'height': 30.0},
-        'neck': {'bottom_d': 45.0, 'top_d': 25.0, 'height': 70.0},
-        'top': {'diameter': 22.5, 'piece': 'pawn'},
+        'base': {'diameter': 40.0, 'height': 12.0},
+        'neck': {'bottom_d': 37.0, 'top_d': 17.0, 'height': 45.0},
+        'top': {'diameter': 22.0, 'piece': 'rook'},
     }
 
     result = build_piece(spec)
-
-    ringlist = [
-        {'diameter': 20.0, 'thickness': 2.0, 'pos': 10.0},
-        {'diameter': 30.0, 'thickness': 2.0, 'pos': 20.0},
-        {'diameter': 40.0, 'thickness': 2.0, 'pos': 30.0},
-    ]
-
-    #result = add_rings(ringlist)
     cqv.show_object(result)
