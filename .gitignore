@@ -105,3 +105,5 @@ venv.bak/
 
 # other
 *.pid
+*.stl
+output/

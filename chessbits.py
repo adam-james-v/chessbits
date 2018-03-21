@@ -1,7 +1,5 @@
-
-
 import cadquery as cq
-import cqmods.cqview as cqv
+import cqview as cqv
 
 def ring(diameter, thickness):
     'create a horizontal ring with diameter and thickness'
@@ -139,7 +137,7 @@ def top(diameter, piece):
             .threePointArc((0.15, height*0.85), (0, height))
             .close()
             .revolve()
-            .edges().fillet(0.2) #TODO: filter the bottom edge out
+            .edges().fillet(0.2)
         )
 
         sphere = (cq.Workplane('XY')
@@ -241,21 +239,21 @@ def top(diameter, piece):
 
         return result
 
-        
+    # set result equal to the function with name matching piece
+    result = locals()[piece]()
 
-    # TODO: Find cleaner way to write this?
-    if piece == 'pawn':
-        result = pawn()
-    if piece == 'rook':
-        result = rook()
-    if piece == 'bishop':
-        result = bishop()
-    if piece == 'queen':
-        result = queen()
-    if piece == 'king':
-        result = king()
-    else:
-        result = temp
+    # if piece == 'pawn':
+    #     result = pawn()
+    # if piece == 'rook':
+    #     result = rook()
+    # if piece == 'bishop':
+    #     result = bishop()
+    # if piece == 'queen':
+    #     result = queen()
+    # if piece == 'king':
+    #     result = king()
+    # else:
+    #     result = temp
 
     result = result.findSolid().scale(diameter)
 
@@ -294,7 +292,7 @@ if __name__ == '__main__':
     spec = {
         'base': {'diameter': 40.0, 'height': 12.0},
         'neck': {'bottom_d': 37.0, 'top_d': 17.0, 'height': 45.0},
-        'top': {'diameter': 22.0, 'piece': 'king'},
+        'top': {'diameter': 22.0, 'piece': 'queen'},
     }
 
     result = build_piece(spec)

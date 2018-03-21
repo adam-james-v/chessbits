@@ -207,7 +207,7 @@ function init() {
     gui.open();
 
     // MAIN GEOMETRY RENDERER
-    renderer = new THREE.WebGLRenderer( { alpha: false, antialias: false  } );
+    renderer = new THREE.WebGLRenderer( { alpha: true, antialias: false  } );
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize( window.innerWidth, window.innerHeight );
 
