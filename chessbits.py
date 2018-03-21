@@ -126,22 +126,134 @@ def top(diameter, piece):
 
         return result
 
-    def knight(base):
+    def knight():
         pass
 
-    def bishop(base):
-        pass
+    def bishop():
+        height = 1.0
 
-    def queen(base):
-        pass
+        top = (cq.Workplane('XY')
+            .lineTo(0.25, 0.0)
+            .threePointArc((0.425, 0.0875), (0.5, height*0.35))
+            # .lineTo(0.0, height)
+            .threePointArc((0.15, height*0.85), (0, height))
+            .close()
+            .revolve()
+            .edges().fillet(0.2) #TODO: filter the bottom edge out
+        )
 
-    def king(base):
-        pass
+        sphere = (cq.Workplane('XY')
+            .sphere(0.1125)
+            .translate((0.0, height*0.95, 0.0))
+        )
 
+        slot_w = 0.1
+
+        top_slice = (cq.Workplane('ZX')
+            .workplane(offset=height*0.2)
+            .box(0.75, 2.0, slot_w)
+            .moveTo(0.0, 0.0).findSolid()
+            .rotate((0,0,0), (1,0,0), -55)
+            .translate((0, 0.55, 0.5))
+        )
+
+        result = top.union(sphere).cut(top_slice)
+
+        return result
+
+    def queen():
+        height = 1.05
+        
+        outer = (cq.Workplane('XY')
+            .lineTo(0.5625, 0.0)
+            .threePointArc((0.475, height*0.5), (0.675, height))
+            .lineTo(0.6, height)
+            .threePointArc((0.375, height*0.75), (0.325, height*0.5))
+            .lineTo(0, height*0.5)
+            .close()
+            .revolve()
+        )
+
+        cyl_rad = 0.125
+
+        cyl = (cq.Workplane('XY')
+            .circle(cyl_rad)
+            .extrude(1.0, both=True)
+            .translate((0, height, 0))
+        )
+
+        angles = range(0, 360, (360/5))
+
+        for angle in angles:
+            temp_cyl = cyl.rotate((0, 0, 0), (0, 1, 0), angle)
+
+            outer = outer.cut(temp_cyl)
+
+        fill_sphere = (cq.Workplane('XY')
+            .sphere(0.5)
+            .translate((0, height*0.65, 0))
+        )
+
+        top_sphere = (cq.Workplane('XY')
+            .sphere(cyl_rad)
+            .translate((0, height + cyl_rad*0.8, 0))
+        )
+
+        result = (outer
+            .union(fill_sphere)
+            .union(top_sphere)
+        )
+
+        return result
+
+    def king():
+        height = 1.1
+        pts = [
+            (0.5625, 0.0),
+            (0.675, height*0.875),
+            (0.3125, height),
+            (0.0, height),
+        ]
+        
+        base = (cq.Workplane('XY')
+            .polyline(pts)
+            .close()
+            .revolve()
+            .edges('>Y')
+            .fillet(0.325)
+        )
+
+        top_sphere = (cq.Workplane('XY')
+            .sphere(0.235)
+            .translate((0, height*0.9, 0))
+        ) 
+
+        cr_l, cr_d = 0.35, 0.1
+        cross_h = cq.Workplane('XY').box(cr_l, cr_d, cr_d)
+        cross_v = cq.Workplane('XY').box(cr_d, cr_l+0.05, cr_d)
+
+        cross = (cross_h
+            .union(cross_v)
+            .translate((0, height + 0.25, 0))
+        )
+        
+        result = base.union(top_sphere).union(cross)
+
+        return result
+
+        
+
+    # TODO: Find cleaner way to write this?
     if piece == 'pawn':
         result = pawn()
     if piece == 'rook':
         result = rook()
+    if piece == 'bishop':
+        result = bishop()
+    if piece == 'queen':
+        result = queen()
+    if piece == 'king':
+        result = king()
     else:
         result = temp
 
@@ -182,7 +294,7 @@ if __name__ == '__main__':
     spec = {
         'base': {'diameter': 40.0, 'height': 12.0},
         'neck': {'bottom_d': 37.0, 'top_d': 17.0, 'height': 45.0},
-        'top': {'diameter': 22.0, 'piece': 'rook'},
+        'top': {'diameter': 22.0, 'piece': 'king'},
     }
 
     result = build_piece(spec)
