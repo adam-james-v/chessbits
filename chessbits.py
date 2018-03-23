@@ -1,4 +1,5 @@
 import os
+import sys
 import cadquery as cq
 import cqview as cqv
 
@@ -449,17 +450,43 @@ def output(pieces=None, STL=True, WEB=False, STEP=False):
         temp = build_piece(specs(piece))
         if STL:
             out = temp.rotate((0,0,0), (1,0,0), 90).findSolid().exportStl(('output/%s.stl' % piece), 0.01)
+            print('Created file: output/%s.stl' % piece)
         temp = temp.translate((start + idx*spacing, 0, 0,))
         result = result.union(temp)
 
     if WEB:
         cqv.show_object(result)
+        print('Created file: web_view/assembly.json')
+        print('--- To view the web output, please start a server in the web_view/ folder ---')
     if STEP:
         result.findSolid().exportStep('output/pieces.step')
+        print('Created file: output/pieces.step')
 
+    print('Your files have been generated successfully.')
     return
 
 
 if __name__ == '__main__':
 
-    output()
+    if len(sys.argv) < 2:
+        output()
+    else:
+        to_build = []
+        STL_arg = True
+        WEB_arg = False
+        STEP_arg = False
+        for arg in sys.argv:
+            if arg in ['pawn', 'rook', 'knight', 'bishop', 'king', 'queen']:
+                to_build.append(arg)
+            elif arg in ['noSTL', 'nostl']:
+                STL_arg = False
+            elif arg in ['WEB', 'web']:
+                WEB_arg = True
+            elif arg in ['STEP', 'step', 'stp']:
+                STEP_arg = True
+            elif not arg.endswith('.py'):
+                print("Ignoring invalid input: %s. Perhaps there was a typo?" % arg)
+        if any([STL_arg, WEB_arg, STEP_arg]):
+            output(to_build, STL=STL_arg, WEB=WEB_arg, STEP=STEP_arg)
+        else:
+            print("Sorry, you have not specified any output format. Doing nothing instead.")
