@@ -3,7 +3,6 @@ import cqview as cqv
 
 def ring(diameter, thickness):
     'create a horizontal ring with diameter and thickness'
-
     result = (cq.Workplane('ZX')
         .workplane(offset=-thickness/2.0)
         .circle(diameter/2.0).extrude(thickness)
@@ -14,7 +13,12 @@ def ring(diameter, thickness):
 
 def base(diameter, height):
     'create a base with diameter and height'
-    # TODO: add validation to params here?
+    
+    if diameter > 100.0 or diameter < 5.0:
+        raise ValueError("Diameter must be between 5 and 100 (inclusive)")
+    if height < diameter / 5.0:
+        raise ValueError("Height must be greater than %f" % (diameter/5.0))
+
     radius = diameter/2.0
     notch = height * 0.1
 
@@ -38,6 +42,9 @@ def base(diameter, height):
 
 def neck(bottom_d, top_d, height):
     'create neck with bottom diameter, top diameter, and height'
+    
+    if bottom_d > 100.0 or bottom_d < 5.0 or top_d > 100.0 or top_d < 5.0:
+        raise ValueError("Diameter must be between 5 and 100 (inclusive)")
     if bottom_d < top_d:
         raise ValueError('Bottom Diameter cannot be less than top diameter')
 
@@ -70,10 +77,12 @@ def neck(bottom_d, top_d, height):
 
 def top(diameter, piece):
 
-    temp = (cq.Workplane('ZX')
-        .box(1.0, 1.0, 1.0)
-        .translate((0, 0.5, 0))
-    )
+    valid_pieces = ['pawn', 'rook', 'knight', 'bishop', 'king', 'queen']
+
+    if diameter > 100.0 or diameter < 5.0:
+        raise ValueError("Diameter must be between 5 and 100 (inclusive)")
+    if piece not in valid_pieces:
+        raise ValueError("Invalid piece type. Valid entries are : pawn, rook, knight, bishop, king, queen")
 
     def pawn():
         sphere = (cq.Workplane('XY')
@@ -125,7 +134,107 @@ def top(diameter, piece):
         return result
 
     def knight():
-        pass
+        base_radius = 12.5
+        
+        pts =[
+            (10.0, 0.0),          
+            (9.5, 7.35),          
+            (6.35, 14.325),          
+            (0.0, 20.0),          
+            (3.5, 21.0),          
+            (7.65, 20.0),          
+            (10.75, 16.5),          
+            (17.135, 16.75),          
+            (19.0, 22.0),          
+            (0.5, 40.0),          
+            (-7.5, 40.0),          
+            (-13.25, 37.0),          
+            (-15.8, 33.60),          
+            (-18.675, 25.325),          
+            (-15.31, 11.0),          
+            (-13.5, 0.0),           
+        ]
+
+        body = (cq.Workplane('XY').workplane(offset=-base_radius*0.75)
+            .polyline(pts).close()
+            .extrude(base_radius*1.5)
+            .edges('|Z').fillet(1.75)
+        )
+
+        left_cyl_cut = (cq.Workplane('ZY').workplane(offset=-50)
+            .moveTo(-256.0, 40).circle(250.0).extrude(100.0)
+        )
+        right_cyl_cut = (cq.Workplane('ZY').workplane(offset=-50)
+            .moveTo(256.0, 40).circle(250.0).extrude(100.0)
+        )
+
+        left_box_cut = (cq.Workplane('XY').box(100,20,10)
+            .rotate((0, 0, 0), (0, 1, 0), 4.5)
+            .rotate((0, 0, 0), (0, 0, 1), -29)
+            .translate((0, 34, 11.5))
+        )
+
+        right_box_cut = (cq.Workplane('XY').box(100,20,10)
+            .rotate((0, 0, 0), (0, 1, 0), -4.5)
+            .rotate((0, 0, 0), (0, 0, 1), -29)
+            .translate((0, 34, -11.5))
+        )
+
+        ring01 = ring(15.75, 4.5)
+        base_ring = ring(32.0, 4.5)
+
+        slicer = (cq.Workplane('XY')
+            .box(32,32,32)
+            .translate((0,0,16))
+        )
+
+        mohawk = (ring01.cut(slicer)
+            .rotate((0,0,0), (1,0,0), 90)
+            .rotate((0,0,0), (0,0,1), 53)
+            .translate((-6.5,25,0))
+        )
+
+        left_ear = (cq.Workplane('ZY')
+            .lineTo(4.0, 0.0)
+            .lineTo(0.0, 6.5)
+            .close()
+            .extrude(4.5)
+            .translate((0,37.5,-2.1))
+            .rotate((0,0,0), (0,1,0), -6)
+            .rotate((0,0,0), (1,0,0), -5)
+        )
+
+        right_ear = (cq.Workplane('ZY')
+            .lineTo(-4.0, 0.0)
+            .lineTo(0.0, 6.5)
+            .close()
+            .extrude(4.5)
+            .translate((0,37.5,2.1))
+            .rotate((0,0,0), (0,1,0), 6)
+            .rotate((0,0,0), (1,0,0), 5)
+        )
+
+        ear_slice = (cq.Workplane('XY')
+            .box(11,11,50)
+            .rotate((0,0,0), (0,0,1), 45)
+            .translate((-4.8,48.75,0))
+        )
+
+        result = (body
+            .cut(left_cyl_cut)
+            .cut(right_cyl_cut)
+            .cut(left_box_cut)
+            .cut(right_box_cut)
+            .union(mohawk)
+            .union(left_ear)
+            .union(right_ear)
+            .cut(ear_slice)
+            .translate((1.5,0,0))
+            .union(base_ring)
+            .findSolid().scale(0.0267)
+        )
+
+        return result
 
     def bishop():
         height = 1.0
@@ -241,21 +350,13 @@ def top(diameter, piece):
 
     # set result equal to the function with name matching piece
     result = locals()[piece]()
-
-    # if piece == 'pawn':
-    #     result = pawn()
-    # if piece == 'rook':
-    #     result = rook()
-    # if piece == 'bishop':
-    #     result = bishop()
-    # if piece == 'queen':
-    #     result = queen()
-    # if piece == 'king':
-    #     result = king()
-    # else:
-    #     result = temp
-
-    result = result.findSolid().scale(diameter)
+    
+    try: 
+        # Fails on knight() due to knight already being scaled
+        result = result.findSolid().scale(diameter)
+    except:
+        # For knight, skip .findSolid()
+        result = result.scale(diameter)
 
     return result
 
@@ -271,7 +372,12 @@ def build_piece(specs):
     'build a piece based on specs given'
     result = cq.Workplane('ZX')
     base_h = specs['base']['height']
-    neck_h = base_h + specs['neck']['height']
+
+    # For Knight, no 'neck' exists, so instead set neck_h to base_h
+    try:
+        neck_h = base_h + specs['neck']['height']
+    except:
+        neck_h = base_h
 
     for part in specs:
         spec = specs[part]
@@ -284,16 +390,55 @@ def build_piece(specs):
     return result
 
 def build_set():
-    pass
+    std_d = 40.0
+    std_h = 45.0
+    std_t = 22.0
+    
+    pieces = [
+        {
+        'base': {'diameter': std_d, 'height': 12.0},
+        'neck': {'bottom_d': std_d*0.95, 'top_d': std_d*0.425, 'height': std_h*0.75},
+        'top': {'diameter': std_t, 'piece': 'pawn'},
+        },
+        {
+        'base': {'diameter': std_d, 'height': 12.0},
+        'neck': {'bottom_d': std_d*0.95, 'top_d': std_d*0.425, 'height': std_h*0.825},
+        'top': {'diameter': std_t, 'piece': 'rook'},
+        },
+        {
+        'base': {'diameter': std_d, 'height': 12.0},
+        'top': {'diameter': std_t*2.0, 'piece': 'knight'},
+        },
+        {
+        'base': {'diameter': std_d, 'height': 12.0},
+        'neck': {'bottom_d': std_d*0.95, 'top_d': std_d*0.425, 'height': std_h},
+        'top': {'diameter': std_t, 'piece': 'bishop'},
+        },
+        {
+        'base': {'diameter': std_d, 'height': 12.0},
+        'neck': {'bottom_d': std_d*0.95, 'top_d': std_d*0.425, 'height': std_h*1.2},
+        'top': {'diameter': std_t, 'piece': 'queen'},
+        },
+        {
+        'base': {'diameter': std_d, 'height': 12.0},
+        'neck': {'bottom_d': std_d*0.95, 'top_d': std_d*0.425, 'height': std_h*1.2},
+        'top': {'diameter': std_t, 'piece': 'king'},
+        },
+    ]
+
+    result = cq.Workplane('XY')
+
+    for idx, piece in enumerate(pieces):
+        spacing = 50.0
+        start = -(len(pieces) * spacing)/2.0     
+        temp = build_piece(piece).translate((start + idx*spacing, 0, 0,))
+        result = result.union(temp)
+        
+
+    return result
 
 
 if __name__ == '__main__':
 
-    spec = {
-        'base': {'diameter': 40.0, 'height': 12.0},
-        'neck': {'bottom_d': 37.0, 'top_d': 17.0, 'height': 45.0},
-        'top': {'diameter': 22.0, 'piece': 'queen'},
-    }
-
-    result = build_piece(spec)
+    result = build_set()
     cqv.show_object(result)
