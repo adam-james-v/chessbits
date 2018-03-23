@@ -1,3 +1,4 @@
+import os
 import cadquery as cq
 import cqview as cqv
 
@@ -13,7 +14,7 @@ def ring(diameter, thickness):
 
 def base(diameter, height):
     'create a base with diameter and height'
-    
+
     if diameter > 100.0 or diameter < 5.0:
         raise ValueError("Diameter must be between 5 and 100 (inclusive)")
     if height < diameter / 5.0:
@@ -42,7 +43,7 @@ def base(diameter, height):
 
 def neck(bottom_d, top_d, height):
     'create neck with bottom diameter, top diameter, and height'
-    
+
     if bottom_d > 100.0 or bottom_d < 5.0 or top_d > 100.0 or top_d < 5.0:
         raise ValueError("Diameter must be between 5 and 100 (inclusive)")
     if bottom_d < top_d:
@@ -96,7 +97,7 @@ def top(diameter, piece):
         )
 
         ring_spec = [
-            {'diameter': 1.05, 'thickness': 0.125, 'pos': 0.0625},        
+            {'diameter': 1.05, 'thickness': 0.125, 'pos': 0.0625},
         ]
         ring = add_rings(ring_spec)
 
@@ -135,24 +136,24 @@ def top(diameter, piece):
 
     def knight():
         base_radius = 12.5
-        
+
         pts =[
-            (10.0, 0.0),          
-            (9.5, 7.35),          
-            (6.35, 14.325),          
-            (0.0, 20.0),          
-            (3.5, 21.0),          
-            (7.65, 20.0),          
-            (10.75, 16.5),          
-            (17.135, 16.75),          
-            (19.0, 22.0),          
-            (0.5, 40.0),          
-            (-7.5, 40.0),          
-            (-13.25, 37.0),          
-            (-15.8, 33.60),          
-            (-18.675, 25.325),          
-            (-15.31, 11.0),          
-            (-13.5, 0.0),           
+            (10.0, 0.0),
+            (9.5, 7.35),
+            (6.35, 14.325),
+            (0.0, 20.0),
+            (3.5, 21.0),
+            (7.65, 20.0),
+            (10.75, 16.5),
+            (17.135, 16.75),
+            (19.0, 22.0),
+            (0.5, 40.0),
+            (-7.5, 40.0),
+            (-13.25, 37.0),
+            (-15.8, 33.60),
+            (-18.675, 25.325),
+            (-15.31, 11.0),
+            (-13.5, 0.0),
         ]
 
         body = (cq.Workplane('XY').workplane(offset=-base_radius*0.75)
@@ -270,7 +271,7 @@ def top(diameter, piece):
 
     def queen():
         height = 1.05
-        
+
         outer = (cq.Workplane('XY')
             .lineTo(0.5625, 0.0)
             .threePointArc((0.475, height*0.5), (0.675, height))
@@ -321,7 +322,7 @@ def top(diameter, piece):
             (0.3125, height),
             (0.0, height),
         ]
-        
+
         base = (cq.Workplane('XY')
             .polyline(pts)
             .close()
@@ -333,7 +334,7 @@ def top(diameter, piece):
         top_sphere = (cq.Workplane('XY')
             .sphere(0.235)
             .translate((0, height*0.9, 0))
-        ) 
+        )
 
         cr_l, cr_d = 0.35, 0.1
         cross_h = cq.Workplane('XY').box(cr_l, cr_d, cr_d)
@@ -343,15 +344,15 @@ def top(diameter, piece):
             .union(cross_v)
             .translate((0, height + 0.25, 0))
         )
-        
+
         result = base.union(top_sphere).union(cross)
 
         return result
 
     # set result equal to the function with name matching piece
     result = locals()[piece]()
-    
-    try: 
+
+    try:
         # Fails on knight() due to knight already being scaled
         result = result.findSolid().scale(diameter)
     except:
@@ -389,56 +390,76 @@ def build_piece(specs):
             result = result.union(top(**spec).translate((0, neck_h, 0)))
     return result
 
-def build_set():
-    std_d = 40.0
-    std_h = 45.0
-    std_t = 22.0
-    
-    pieces = [
-        {
+def specs(piece, std_d=40.0, std_h=47.5, std_t=22.0):
+
+    pawn = {
         'base': {'diameter': std_d, 'height': 12.0},
         'neck': {'bottom_d': std_d*0.95, 'top_d': std_d*0.425, 'height': std_h*0.75},
         'top': {'diameter': std_t, 'piece': 'pawn'},
-        },
-        {
+        }
+
+    rook = {
         'base': {'diameter': std_d, 'height': 12.0},
         'neck': {'bottom_d': std_d*0.95, 'top_d': std_d*0.425, 'height': std_h*0.825},
         'top': {'diameter': std_t, 'piece': 'rook'},
-        },
-        {
+        }
+
+    knight = {
         'base': {'diameter': std_d, 'height': 12.0},
         'top': {'diameter': std_t*2.0, 'piece': 'knight'},
-        },
-        {
+        }
+
+    bishop = {
         'base': {'diameter': std_d, 'height': 12.0},
         'neck': {'bottom_d': std_d*0.95, 'top_d': std_d*0.425, 'height': std_h},
         'top': {'diameter': std_t, 'piece': 'bishop'},
-        },
-        {
+        }
+
+    queen = {
         'base': {'diameter': std_d, 'height': 12.0},
         'neck': {'bottom_d': std_d*0.95, 'top_d': std_d*0.425, 'height': std_h*1.2},
         'top': {'diameter': std_t, 'piece': 'queen'},
-        },
-        {
+        }
+
+    king = {
         'base': {'diameter': std_d, 'height': 12.0},
         'neck': {'bottom_d': std_d*0.95, 'top_d': std_d*0.425, 'height': std_h*1.2},
         'top': {'diameter': std_t, 'piece': 'king'},
-        },
-    ]
+        }
+    return locals()[piece]
+
+
+def output(pieces=None, STL=True, WEB=False, STEP=False):
+
+    path = os.path.join(os.getcwd(), 'output')
+    try:
+        os.makedirs(path)
+    except OSError:
+        if not os.path.isdir(path):
+            raise
+
+    if not pieces:
+        pieces = ['pawn', 'rook', 'knight', 'bishop', 'queen', 'king']
 
     result = cq.Workplane('XY')
 
     for idx, piece in enumerate(pieces):
         spacing = 50.0
-        start = -(len(pieces) * spacing)/2.0     
-        temp = build_piece(piece).translate((start + idx*spacing, 0, 0,))
+        start = -((len(pieces) - 1) * spacing)/2.0
+        temp = build_piece(specs(piece))
+        if STL:
+            out = temp.rotate((0,0,0), (1,0,0), 90).findSolid().exportStl(('output/%s.stl' % piece), 0.01)
+        temp = temp.translate((start + idx*spacing, 0, 0,))
         result = result.union(temp)
-        
 
-    return result
+    if WEB:
+        cqv.show_object(result)
+    if STEP:
+        result.findSolid().exportStep('output/pieces.step')
+
+    return
 
 
 if __name__ == '__main__':
 
-    result = build_set()
-    cqv.show_object(result)
+    output()
