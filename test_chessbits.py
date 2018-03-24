@@ -49,7 +49,7 @@ class ChessbitsTest(unittest.TestCase):
     def test_build_piece(self):
         """Does the build_piece function work?"""
         a = len(cb.build_piece(cb.specs('pawn')).edges().vals())
-        self.assertEquals(a, 61)
+        self.assertEquals(a, 59)
 
 if __name__ == '__main__':
     unittest.main()

@@ -3,6 +3,14 @@ import sys
 import cadquery as cq
 import cqview as cqv
 
+try:
+    import config
+    config_exists = True
+except:
+    config_exists = False
+    pass
+
+
 def ring(diameter, thickness):
     'create a horizontal ring with diameter and thickness'
     result = (cq.Workplane('ZX')
@@ -46,9 +54,11 @@ def neck(bottom_d, top_d, height):
     'create neck with bottom diameter, top diameter, and height'
 
     if bottom_d > 100.0 or bottom_d < 5.0 or top_d > 100.0 or top_d < 5.0:
-        raise ValueError("Diameter must be between 5 and 100 (inclusive)")
+        raise ValueError('Diameter must be between 5 and 100 (inclusive)')
     if bottom_d < top_d:
         raise ValueError('Bottom Diameter cannot be less than top diameter')
+    if height > 200.0 or height < 10.0:
+        raise ValueError('Height must be between 10 and 200 (inclusive)')
 
     bottom_r = bottom_d/2.0
     top_r = top_d/2.0
@@ -391,78 +401,91 @@ def build_piece(specs):
             result = result.union(top(**spec).translate((0, neck_h, 0)))
     return result
 
-def specs(piece, std_d=40.0, std_h=47.5, std_t=22.0):
+def specs(piece, std_d=40.0, std_h=48.0, std_top=22.0):
 
     pawn = {
-        'base': {'diameter': std_d, 'height': 12.0},
-        'neck': {'bottom_d': std_d*0.95, 'top_d': std_d*0.425, 'height': std_h*0.75},
-        'top': {'diameter': std_t, 'piece': 'pawn'},
+        'base': {'diameter': std_d, 'height': std_h/4.0},
+        'neck': {'bottom_d': std_d*0.925, 'top_d': std_d*0.4, 'height': std_h*0.65},
+        'top': {'diameter': std_top*0.95, 'piece': 'pawn'},
         }
 
     rook = {
-        'base': {'diameter': std_d, 'height': 12.0},
-        'neck': {'bottom_d': std_d*0.95, 'top_d': std_d*0.425, 'height': std_h*0.825},
-        'top': {'diameter': std_t, 'piece': 'rook'},
+        'base': {'diameter': std_d, 'height': std_h/4.0},
+        'neck': {'bottom_d': std_d*0.95, 'top_d': std_d*0.425, 'height': std_h*0.85},
+        'top': {'diameter': std_top, 'piece': 'rook'},
         }
 
     knight = {
-        'base': {'diameter': std_d, 'height': 12.0},
-        'top': {'diameter': std_t*2.0, 'piece': 'knight'},
+        'base': {'diameter': std_d, 'height': std_h/4.0},
+        'top': {'diameter': std_top*2.1, 'piece': 'knight'},
         }
 
     bishop = {
-        'base': {'diameter': std_d, 'height': 12.0},
+        'base': {'diameter': std_d, 'height': std_h/4.0},
         'neck': {'bottom_d': std_d*0.95, 'top_d': std_d*0.425, 'height': std_h},
-        'top': {'diameter': std_t, 'piece': 'bishop'},
+        'top': {'diameter': std_top, 'piece': 'bishop'},
         }
 
     queen = {
-        'base': {'diameter': std_d, 'height': 12.0},
-        'neck': {'bottom_d': std_d*0.95, 'top_d': std_d*0.425, 'height': std_h*1.2},
-        'top': {'diameter': std_t, 'piece': 'queen'},
+        'base': {'diameter': std_d, 'height': std_h/4.0},
+        'neck': {'bottom_d': std_d*0.95, 'top_d': std_d*0.425, 'height': std_h*1.3},
+        'top': {'diameter': std_top, 'piece': 'queen'},
         }
 
     king = {
-        'base': {'diameter': std_d, 'height': 12.0},
-        'neck': {'bottom_d': std_d*0.95, 'top_d': std_d*0.425, 'height': std_h*1.2},
-        'top': {'diameter': std_t, 'piece': 'king'},
+        'base': {'diameter': std_d, 'height': std_h/4.0},
+        'neck': {'bottom_d': std_d*0.95, 'top_d': std_d*0.425, 'height': std_h*1.3},
+        'top': {'diameter': std_top, 'piece': 'king'},
         }
     return locals()[piece]
 
 
-def output(pieces=None, STL=True, WEB=False, STEP=False):
+def output(pieces=None, custom=False, STL=True, WEB=False, STEP=False):
+    if not any([STL, WEB, STEP]):
+        print("Sorry, you have not specified any output format. Doing nothing instead.")
+    else:
+        path = os.path.join(os.getcwd(), 'output')
+        try:
+            os.makedirs(path)
+        except OSError:
+            if not os.path.isdir(path):
+                raise
 
-    path = os.path.join(os.getcwd(), 'output')
-    try:
-        os.makedirs(path)
-    except OSError:
-        if not os.path.isdir(path):
-            raise
+        if not pieces:
+            pieces = ['pawn', 'rook', 'knight', 'bishop', 'queen', 'king']
 
-    if not pieces:
-        pieces = ['pawn', 'rook', 'knight', 'bishop', 'queen', 'king']
+        result = cq.Workplane('XY')
 
-    result = cq.Workplane('XY')
+        for idx, piece in enumerate(pieces):
+            spacing = 50.0
+            start = -((len(pieces) - 1) * spacing)/2.0
+            if custom:
+                temp = build_piece(getattr(config, piece))
+            else:
+                temp = build_piece(specs(piece))
+            if STL:
+                out = temp.rotate((0,0,0), (1,0,0), 90).findSolid().exportStl(('output/%s.stl' % piece), 0.01)
+                print('Created file: output/%s.stl' % piece)
+            temp = temp.translate((start + idx*spacing, 0, 0,))
+            result = result.union(temp)
 
-    for idx, piece in enumerate(pieces):
-        spacing = 50.0
-        start = -((len(pieces) - 1) * spacing)/2.0
-        temp = build_piece(specs(piece))
-        if STL:
-            out = temp.rotate((0,0,0), (1,0,0), 90).findSolid().exportStl(('output/%s.stl' % piece), 0.01)
-            print('Created file: output/%s.stl' % piece)
-        temp = temp.translate((start + idx*spacing, 0, 0,))
-        result = result.union(temp)
+        if WEB:
+            cqv.show_object(result)
+            print('Created file: web_view/assembly.json')
+            print('--- To view the web output, please start a server in the web_view/ folder ---')
+        if STEP:
+            result.findSolid().exportStep('output/pieces.step')
+            print('Created file: output/pieces.step')
 
-    if WEB:
-        cqv.show_object(result)
-        print('Created file: web_view/assembly.json')
-        print('--- To view the web output, please start a server in the web_view/ folder ---')
-    if STEP:
-        result.findSolid().exportStep('output/pieces.step')
-        print('Created file: output/pieces.step')
+        print('Your files have been generated successfully.')
+    return
 
-    print('Your files have been generated successfully.')
+def user_build():
+    to_build = []
+    for val in dir(config):
+        if val in ['pawn', 'rook', 'knight', 'bishop', 'queen', 'king']:
+            to_build.append(val)
+    output(to_build, custom=True, STL=config.STL, WEB=config.WEB, STEP=config.STEP)
     return
 
 
@@ -476,7 +499,13 @@ if __name__ == '__main__':
         WEB_arg = False
         STEP_arg = False
         for arg in sys.argv:
-            if arg in ['pawn', 'rook', 'knight', 'bishop', 'king', 'queen']:
+            if arg in ['custom', 'use_specs']:
+                if config_exists:
+                    user_build()
+                else:
+                    print('You have indicated that you wish to build with custom specifications but no specs.py file was found. Could there be a typo?')
+                quit()
+            elif arg in ['pawn', 'rook', 'knight', 'bishop', 'king', 'queen']:
                 to_build.append(arg)
             elif arg in ['noSTL', 'nostl']:
                 STL_arg = False
@@ -486,7 +515,4 @@ if __name__ == '__main__':
                 STEP_arg = True
             elif not arg.endswith('.py'):
                 print("Ignoring invalid input: %s. Perhaps there was a typo?" % arg)
-        if any([STL_arg, WEB_arg, STEP_arg]):
-            output(to_build, STL=STL_arg, WEB=WEB_arg, STEP=STEP_arg)
-        else:
-            print("Sorry, you have not specified any output format. Doing nothing instead.")
+        output(to_build, STL=STL_arg, WEB=WEB_arg, STEP=STEP_arg)
