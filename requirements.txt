@@ -1,2 +1,2 @@
 chessbits
-cadquery>=1.0.0
+cadquery>=1.1.0
