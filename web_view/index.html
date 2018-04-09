@@ -2,28 +2,10 @@
 <html>
   <head>
     <title>CQ View</title>
-    <script src="/effect.js"></script>
-    <script src="/three.min.js"></script>
-    <script src="/three.etc.min.js"></script>
-    <script src="/js/controls/OrbitControls.js"></script>
-    
-    <!-- Following refresh script found:
-    https://stackoverflow.com/a/37469774 -->
-    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-    <script>
-        var previous = null;
-        var current = null;
-        setInterval(function() {
-            $.getJSON("assembly.json", function(json) {
-                current = JSON.stringify(json);            
-                if (previous && current && previous !== current) {
-                    console.log('refresh');
-                    location.reload();
-                }
-                previous = current;
-            });                       
-        }, 300);   
-    </script> -->
+    <script src="effect.js"></script>
+    <script src="three.min.js"></script>
+    <script src="three.etc.min.js"></script>
+    <script src="js/controls/OrbitControls.js"></script>
     
     <style>
       html, body {
@@ -99,6 +81,8 @@
         <button onclick="orient(0, 500, 0);">T</button>
         <button onclick="orient(0, 0, 500);">L</button>
         <button onclick="orient(500, 500, 500);">H</button>
+        <form action='/queen/'><button type='submit'>QUEEN</button></form>
+        <form action='/king/'><button type='submit'>KING</button></form>
       </div>
       <div id='geom'></div>
       <div class='no-clicks' id='ref'></div>
